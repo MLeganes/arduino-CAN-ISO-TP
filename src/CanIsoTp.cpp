@@ -36,7 +36,6 @@ int CanIsoTp::send(pdu_t *pdu)
             {
                 ret = send_FirstFrame(pdu);
                 pdu->cantpState = CANTP_WAIT_FIRST_FC;
-                Serial.printf("\n\t *** Can-State: CANTP_WAIT_FIRST_FC  TimeStamp: %i millis   \n", millis());
                 _timerFCWait = millis(); // Start the timer to check timeout
             }
             break;
@@ -46,7 +45,6 @@ int CanIsoTp::send(pdu_t *pdu)
             {
                 pdu->cantpState = CANTP_IDLE;
                 ret = 1;
-                Serial.printf("\n *** TimeOut -- WAIT_FIRST_FC  %i millis   \n", millis());
             }
             break;
 
@@ -55,7 +53,6 @@ int CanIsoTp::send(pdu_t *pdu)
             {
                 pdu->cantpState = CANTP_IDLE;
                 ret = 1;
-                Serial.printf("\n *** TimeOut -- WAIT_FC  %i millis   \n", millis());
             }
             break;
 
@@ -76,8 +73,8 @@ int CanIsoTp::send(pdu_t *pdu)
                         pdu->len -= 7;
                         if (pdu->len == 0)
                             pdu->cantpState = CANTP_IDLE;
-                    }                                                                    // End if
-                }                                                                        // End while
+                    } // End if
+                } // End while
                 if (pdu->len <= 7 && _bsCounter > 0 && pdu->cantpState == CANTP_SEND_CF) // Last block. /!\ bsCounter can be 0.
                 {
                     delay(pdu->separationTimeMin);
@@ -91,7 +88,6 @@ int CanIsoTp::send(pdu_t *pdu)
             {
                 bs = false;
                 _bsCounter = pdu->blockSize;
-                Serial.printf("\n *** Bloc Size = %i \n", _bsCounter);
                 while (pdu->len > 7 && !bs)
                 {
                     delay(pdu->separationTimeMin);
@@ -161,7 +157,6 @@ int CanIsoTp::receive(pdu_t *rxpdu)
     {
         if (millis() - _timerSession >= TIMEOUT_SESSION)
         {
-            Serial.printf("**** TimeOut -- receiver time: %i millis \n", millis());
             return 1;
         }
 
@@ -210,13 +205,6 @@ int CanIsoTp::send_ConsecutiveFrame(pdu_t *pdu)
         sizeToCopy = pdu->len;
     memcpy(&payload[1], pdu->data, sizeToCopy);
 
-    // To delete!
-    Serial.printf("\n********* send ConsecutiveFrame PCI type FC: %i Seq Id: %i \n", N_PCItypeFC, pdu->seqId + 1);
-    Serial.print(" Bytes: ");
-    for (int i = 0; i < sizeToCopy; i++)
-        Serial.printf("%i ", payload[i]);
-    Serial.println(" ");
-
     // Send can frame
     CAN.beginPacket(pdu->txId);
     CAN.write(payload, 8);
@@ -226,8 +214,6 @@ int CanIsoTp::send_ConsecutiveFrame(pdu_t *pdu)
 }
 int CanIsoTp::receive_ConsecutiveFrame(pdu_t *pdu)
 {
-    Serial.printf("****[1] receive ConsecutiveFrame status: %d: \n", pdu->cantpState);
-
     uint32_t timeDiff = millis() - _timerCFWait;
     _timerCFWait = millis();
 
@@ -237,12 +223,10 @@ int CanIsoTp::receive_ConsecutiveFrame(pdu_t *pdu)
     {
         memcpy(pdu->data + 6 + 7 * (pdu->seqId - 1), _rxPacketData + 1, _rxRestBytes);
         pdu->cantpState = CANTP_END;
-        Serial.printf("****[4] receive_ConsecutiveFrame status: %d: seqId: %d \n", pdu->cantpState, pdu->seqId);
     }
     else
     {
         memcpy(pdu->data + 6 + 7 * (pdu->seqId - 1), _rxPacketData + 1, 7);
-        Serial.printf("****[5] last ConsecutiveFrame status: %d: seqId: %d \n", pdu->cantpState, pdu->seqId);
         _rxRestBytes -= 7;
     }
 
@@ -261,25 +245,15 @@ int CanIsoTp::send_FlowControlFrame(pdu_t *pdu)
     payload[1] = pdu->blockSize;
     payload[2] = pdu->separationTimeMin;
 
-    Serial.printf("\n********* send_FlowControlFrame PCI type FC: %d Total-len: %d \n", N_PCItypeFC, sizeof(payload));
-
     // Send can frame
     CAN.beginPacket(pdu->txId);
     CAN.write(payload, 8);
     CAN.endPacket();
-
-    Serial.printf("\n Time to receive FF and Send FC frames: %i micros.\n", (micros() - timerStart));
     return 0;
 }
 
 int CanIsoTp::receive_FlowControlFrame(pdu_t *pdu)
 {
-    Serial.print("**** Received FlowControlFrame ");
-    Serial.printf(" len: %i  Bytes: ", _rxPacketLen);
-    for (int i = 0; i < (int)_rxPacketLen; i++)
-        Serial.printf("%i ", _rxPacketData[i]);
-    Serial.println(" ");
-
     uint8_t ret = 0;
 
     if (pdu->cantpState != CANTP_WAIT_DATA && pdu->cantpState != CANTP_WAIT_FIRST_FC && pdu->cantpState != CANTP_WAIT_FC)
@@ -297,7 +271,6 @@ int CanIsoTp::receive_FlowControlFrame(pdu_t *pdu)
     {
     case CANTP_FLOWSTATUS_CTS: // continue to send
         pdu->cantpState = CANTP_SEND_CF;
-        Serial.println(" FC-Status: CANTP_FC_CTS ");
         break;
 
     case CANTP_FLOWSTATUS_WT:
@@ -306,7 +279,6 @@ int CanIsoTp::receive_FlowControlFrame(pdu_t *pdu)
         {
             _receivedFCWaits = 0;
             pdu->cantpState = CANTP_IDLE;
-            Serial.println(" FC-Status: CANTP_FC_WAIT ");
             ret = 1;
         }
         break;
@@ -314,11 +286,9 @@ int CanIsoTp::receive_FlowControlFrame(pdu_t *pdu)
     case CANTP_FLOWSTATUS_OVFL:
     default:
         pdu->cantpState = CANTP_IDLE;
-        Serial.println(" FC-Status: CANTP_FC_OVFLW ");
         ret = 1;
         break;
     }
-    Serial.printf("\t Can-State: %i, Block Size: %i, TSmin: %i\n", pdu->cantpState, pdu->blockSize, pdu->separationTimeMin);
     return ret;
 }
 
@@ -332,12 +302,6 @@ int CanIsoTp::send_FirstFrame(pdu_t *pdu)
     payload[0] = (N_PCItypeFF | ((pdu->len & 0x0F00) >> 8));
     payload[1] = (pdu->len & 0x00FF);
     memcpy(&payload[2], pdu->data, 6); // Only copy 6Bytes to transfer.
-
-    Serial.printf("*** Send FirstFrame PCI type SF: %d Total-len: %d ", N_PCItypeFF, sizeof(payload));
-    Serial.print(" Bytes: ");
-    for (int i = 0; i < 8; i++)
-        Serial.printf("%i ", payload[i]);
-    Serial.println(" ");
 
     // Send can frame
     CAN.beginPacket(pdu->txId);
@@ -353,8 +317,6 @@ int CanIsoTp::send_FirstFrame(pdu_t *pdu)
 
 int CanIsoTp::receive_FirstFrame(pdu_t *pdu)
 {
-    Serial.println("****rcv switch ***** receive_FirstFrame");
-
     timerStart = micros(); // time from start to end send FlowControl Frame.
     pdu->seqId = 1;
     pdu->len = (_rxPacketData[0] & 0x0F << 8); // len is 16bits: 0000 XXXX. 0000 0000.
