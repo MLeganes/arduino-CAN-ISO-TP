@@ -17,7 +17,6 @@
 #define N_PCItypeCF                             0x20        //Consecutive Frame
 #define N_PCItypeFC                             0x30        //Flow Control Frame
 
-#define BUFFER_SIZE                             128        // Buffer size to Tx/Rx nanopb data.
 #define PACKET_SIZE                             8          // Can Frames size
 
 /* flow status codes */
