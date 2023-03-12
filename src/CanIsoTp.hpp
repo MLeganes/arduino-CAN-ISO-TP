@@ -20,7 +20,7 @@
 #define PACKET_SIZE                             8          // Can Frames size
 
 /* flow status codes */
-// Flow Control autorization (ISO pag. 20)
+// Flow Control autorization.
 #define CANTP_FLOWSTATUS_CTS                     (0x00u) // FC continue to send.
 #define CANTP_FLOWSTATUS_WT                      (0x01u) // FC the request to continue to wait.
 #define CANTP_FLOWSTATUS_OVFL                    (0x02u) // FC buffer overflow.
