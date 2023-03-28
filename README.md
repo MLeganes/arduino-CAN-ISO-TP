@@ -1,5 +1,5 @@
 # Arduino CAN ISO TP
-An Arduino library for sending and receiving data using ISO 15765-2 or ISO-TP (Transport Layer) over CAN-Bus protocol. Support segmented communication point-to-point between CAN nodes via two defined CAN Identifiers. Base on 11 bit CAN identifier scheme address.
+An Arduino library for sending and receiving data using ISO 15765-2 or ISO-TP (Transport Protocol) over CAN-Bus protocol. Support segmented communication point-to-point between CAN nodes via two defined CAN Identifiers. Base on 11 bit CAN identifier scheme address.
 
          _____________
         |             |
