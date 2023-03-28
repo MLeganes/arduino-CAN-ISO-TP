@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include <CAN.h>
-#include <CanIsoTp.hpp>
+#include <CAN.h>        // https://github.com/adafruit/arduino-CAN
+#include <CanIsoTp.hpp> // https://github.com/MLeganes/arduino-can-iso-tp
 
 // CanIsoTp
 CanIsoTp cantp;  // CAN IsoTp protocol to send and receive the pdus

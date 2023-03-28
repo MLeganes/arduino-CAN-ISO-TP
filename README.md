@@ -1,15 +1,17 @@
-# arduino-can-iso-tp
-An Arduino library for sending and receiving data using can-iso-tp (ISO 15765-2) over CAN protocol. Support segmented communication point-to-point between CAN nodes via two defined CAN Identifiers. Base on 11 bit CAN identifier scheme address.
+# Arduino Can ISO TP
+An Arduino library for sending and receiving data using can-iso-tp (ISO 15765-2) or ISO-TP (Transport Layer) over CAN-Bus protocol. Support segmented communication point-to-point between CAN nodes via two defined CAN Identifiers. Base on 11 bit CAN identifier scheme address.
 
-         __________
-        |          |
-        | CanIsoTp |
-        |__________|
-        |          |
-        |   CAN    |
-        |__________|
-             |
-     |----------------| CAN bus
+         _____________
+        |             |
+        |  CanIsoTp   |
+        |(iso 15765-2)|
+        |_____________|
+        |             |
+        |    CAN      |
+        |(ISO 11898-1)|
+        |_____________|
+               |
+     |--------------------| CAN bus
 
 ## Implementation
 The can-iso-tp soport in transmision and reception:
@@ -24,6 +26,7 @@ The can-iso-tp soport in transmision and reception:
 ## Dependencies
 This proyect use the library [arduino-CAN](https://github.com/adafruit/arduino-CAN) from [Adafruit](https://www.adafruit.com/) and it is compatible with the following hardware:
 * [Adafruit Feather M4 CAN Express with ATSAME51](https://www.adafruit.com/)
+* [SAM E5x microcontrollers](https://www.digikey.com/catalog/en/partgroup/sam-d5x-e5x/70620)
 * [Microchip MCP2515](http://www.microchip.com/wwwproducts/en/en010406) based boards/shields
 * [Arduino MKR CAN shield](https://store.arduino.cc/arduino-mkr-can-shield)
 * [Espressif ESP32](http://espressif.com/en/products/hardware/esp32/overview)'s built-in [SJA1000](https://www.nxp.com/products/analog/interfaces/in-vehicle-network/can-transceiver-and-controllers/stand-alone-can-controller:SJA1000T) compatible CAN controller with an external 3.3V CAN transceiver

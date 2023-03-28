@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CAN.h>
+#include <CAN.h> // https://github.com/adafruit/arduino-CAN
 
 /* ************************************************************************** */
 /* DEFINES																	  */
@@ -53,17 +53,21 @@ typedef enum {
 
 typedef struct  pdu_s
 {
-    uint32_t            txId = 0;
-    uint32_t            rxId = 0;
-    cantpStates_t       cantpState = CANTP_SEND;
-    uint8_t             fcStatus =   CANTP_FLOWSTATUS_CTS;
-    uint8_t             seqId = 0;
-    uint8_t             blockSize = 0;
-    uint8_t             bs = false;
+    uint32_t            txId              = 0;
+    uint32_t            rxId              = 0;
+    cantpStates_t       cantpState        = CANTP_SEND;
+    uint8_t             fcStatus          = CANTP_FLOWSTATUS_CTS;
+    uint8_t             seqId             = 0;
+    uint8_t             blockSize         = 0;
+    uint8_t             bs                = false;
     uint8_t             separationTimeMin = 0;
+    uint16_t            len               = 0;
     uint8_t             *data;
-    uint16_t            len =  0;
 } pdu_t;
+
+/* ************************************************************************** */
+/* Class CanIsoTp														  	  */
+/* ************************************************************************** */
 
 class CanIsoTp
 {
@@ -79,15 +83,15 @@ public:
 private:
     // Testing
     unsigned long timerStart = 0;
-    uint8_t _packetData[PACKET_SIZE]; 
+    uint8_t _packetData[PACKET_SIZE];
     uint8_t _packetLen = 0;
 
     uint8_t _rxPacketData[PACKET_SIZE];
-    uint8_t _rxPacketLen = 0;
-    uint8_t _receivedFCWaits = 0;   // Counter for FlowControl receiver "CANTP_FC_WAIT" frames.
-    uint16_t _rxRestBytes = 0;      // Counter to check total bytes to RX
-    unsigned long _timerFCWait = 0;  //uint16_t _timerCFWait = 0;
-    unsigned long _timerCFWait = 0;
+    uint8_t _rxPacketLen     = 0;
+    uint8_t _receivedFCWaits = 0;     // Counter for FlowControl receiver "CANTP_FC_WAIT" frames.
+    uint16_t _rxRestBytes    = 0;     // Counter to check total bytes to RX
+    unsigned long _timerFCWait  = 0;
+    unsigned long _timerCFWait  = 0;
     unsigned long _timerSession = 0;
 
     uint8_t _bsCounter = 0;
