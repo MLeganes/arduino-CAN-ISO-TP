@@ -227,7 +227,7 @@ int CanIsoTp::receive_ConsecutiveFrame(pdu_t *pdu)
 
     uint16_t offset = pdu->len - _rxRestBytes;
     uint8_t sizeToCopy = _rxRestBytes > 7 ? 7 : _rxRestBytes;
-    if (offset > pdu->dataCapacity || sizeToCopy > pdu->dataCapacity - offset)
+    if (pdu->data == nullptr || offset > pdu->dataCapacity || sizeToCopy > pdu->dataCapacity - offset)
     {
         pdu->cantpState = CANTP_ERROR;
         return 1;
@@ -329,6 +329,12 @@ int CanIsoTp::receive_FirstFrame(pdu_t *pdu)
     pdu->seqId = 1;
     pdu->len = ((_rxPacketData[0] & 0x0F) << 8) + _rxPacketData[1];
 
+    if (pdu->len < 8 || _rxPacketLen < PACKET_SIZE || pdu->data == nullptr)
+    {
+        pdu->cantpState = CANTP_ERROR;
+        return 1;
+    }
+
     // Send 1° FlowControlFrame
     pdu_t pdu_fc;
     pdu_fc.txId = pdu->txId;
@@ -336,7 +342,7 @@ int CanIsoTp::receive_FirstFrame(pdu_t *pdu)
     pdu_fc.blockSize = 0;
     pdu_fc.separationTimeMin = 0x7F;
 
-    if (pdu->len < 8 || pdu->len > pdu->dataCapacity)
+    if (pdu->len > pdu->dataCapacity)
     {
         pdu->cantpState = CANTP_ERROR;
         pdu_fc.fcStatus = CANTP_FLOWSTATUS_OVFL;
@@ -371,7 +377,7 @@ int CanIsoTp::send_SingleFrame(pdu_t *pdu)
 int CanIsoTp::receive_SingleFrame(pdu_t *pdu)
 {
     pdu->len = _rxPacketData[0] & 0x0F;
-    if (pdu->len > pdu->dataCapacity)
+    if (pdu->len > 7 || _rxPacketLen < pdu->len + 1 || pdu->len > pdu->dataCapacity || (pdu->len > 0 && pdu->data == nullptr))
     {
         pdu->cantpState = CANTP_ERROR;
         return 1;

@@ -63,7 +63,7 @@ typedef struct  pdu_s
     uint8_t             separationTimeMin = 0;
     uint16_t            len               = 0;
     uint16_t            dataCapacity      = 0;
-    uint8_t             *data;
+    uint8_t             *data             = nullptr;
 } pdu_t;
 
 /* ************************************************************************** */
