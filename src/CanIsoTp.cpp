@@ -219,16 +219,24 @@ int CanIsoTp::receive_ConsecutiveFrame(pdu_t *pdu)
 
     if (pdu->cantpState != CANTP_WAIT_DATA)
         return 0;
-    if (_rxRestBytes <= 7)
+    if (_rxRestBytes > pdu->len)
     {
-        memcpy(pdu->data + 6 + 7 * (pdu->seqId - 1), _rxPacketData + 1, _rxRestBytes);
+        pdu->cantpState = CANTP_ERROR;
+        return 1;
+    }
+
+    uint16_t offset = pdu->len - _rxRestBytes;
+    uint8_t sizeToCopy = _rxRestBytes > 7 ? 7 : _rxRestBytes;
+    if (offset > pdu->dataCapacity || sizeToCopy > pdu->dataCapacity - offset)
+    {
+        pdu->cantpState = CANTP_ERROR;
+        return 1;
+    }
+
+    memcpy(pdu->data + offset, _rxPacketData + 1, sizeToCopy);
+    _rxRestBytes -= sizeToCopy;
+    if (_rxRestBytes == 0)
         pdu->cantpState = CANTP_END;
-    }
-    else
-    {
-        memcpy(pdu->data + 6 + 7 * (pdu->seqId - 1), _rxPacketData + 1, 7);
-        _rxRestBytes -= 7;
-    }
 
     pdu->seqId++;
     return 0;
@@ -319,21 +327,27 @@ int CanIsoTp::receive_FirstFrame(pdu_t *pdu)
 {
     timerStart = micros(); // time from start to end send FlowControl Frame.
     pdu->seqId = 1;
-    pdu->len = (_rxPacketData[0] & 0x0F << 8); // len is 16bits: 0000 XXXX. 0000 0000.
-    pdu->len += _rxPacketData[1];              // len is 16bits: 0000 0000. XXXX XXXX.
-    _rxRestBytes = pdu->len;
-
-    memcpy(pdu->data, &_rxPacketData[2], 6);
-    _rxRestBytes -= 6;
-    pdu->cantpState = CANTP_WAIT_DATA;
+    pdu->len = ((_rxPacketData[0] & 0x0F) << 8) + _rxPacketData[1];
 
     // Send 1° FlowControlFrame
     pdu_t pdu_fc;
     pdu_fc.txId = pdu->txId;
     pdu_fc.rxId = pdu->rxId;
-    pdu_fc.fcStatus = CANTP_FLOWSTATUS_CTS; // FlowControl state
     pdu_fc.blockSize = 0;
     pdu_fc.separationTimeMin = 0x7F;
+
+    if (pdu->len < 8 || pdu->len > pdu->dataCapacity)
+    {
+        pdu->cantpState = CANTP_ERROR;
+        pdu_fc.fcStatus = CANTP_FLOWSTATUS_OVFL;
+        send_FlowControlFrame(&pdu_fc);
+        return 1;
+    }
+
+    memcpy(pdu->data, &_rxPacketData[2], 6);
+    _rxRestBytes = pdu->len - 6;
+    pdu->cantpState = CANTP_WAIT_DATA;
+    pdu_fc.fcStatus = CANTP_FLOWSTATUS_CTS; // FlowControl state
     return send_FlowControlFrame(&pdu_fc);
 }
 
@@ -357,6 +371,11 @@ int CanIsoTp::send_SingleFrame(pdu_t *pdu)
 int CanIsoTp::receive_SingleFrame(pdu_t *pdu)
 {
     pdu->len = _rxPacketData[0] & 0x0F;
+    if (pdu->len > pdu->dataCapacity)
+    {
+        pdu->cantpState = CANTP_ERROR;
+        return 1;
+    }
     memcpy(pdu->data, &_rxPacketData[1], pdu->len);
     pdu->cantpState = CANTP_END;
     return 0;
