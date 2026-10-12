@@ -50,6 +50,7 @@ void loop()
     // Receiver
     Serial.println("Receiving Frames");
     cantp_pdu.data = buff;
+    cantp_pdu.dataCapacity = sizeof(buff);
     cantp.receive(&cantp_pdu);
     delay(500);
 }
